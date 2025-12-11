@@ -1,0 +1,119 @@
+import { Transmission } from "../types.js";
+
+export const createTransmissions = (): Transmission[] => [
+  // Air transmission
+  {
+    id: "air1",
+    name: "Air 1",
+    description: "Pathogen can travel short distances through air",
+    cost: 5,
+    type: "air",
+    level: 1,
+    unlocked: false,
+  },
+  {
+    id: "air2",
+    name: "Air 2",
+    description: "Pathogen survives longer in air, increases range",
+    cost: 10,
+    type: "air",
+    level: 2,
+    unlocked: false,
+  },
+  {
+    id: "air3",
+    name: "Extreme Bioaerosol",
+    description: "Pathogen can travel across continents via air currents",
+    cost: 20,
+    type: "air",
+    level: 3,
+    unlocked: false,
+  },
+
+  // Water transmission
+  {
+    id: "water1",
+    name: "Water 1",
+    description: "Pathogen survives in fresh water",
+    cost: 5,
+    type: "water",
+    level: 1,
+    unlocked: false,
+  },
+  {
+    id: "water2",
+    name: "Water 2",
+    description: "Pathogen survives in salt water, spreads via ships",
+    cost: 10,
+    type: "water",
+    level: 2,
+    unlocked: false,
+  },
+  {
+    id: "water3",
+    name: "Extreme Hydrophilia",
+    description: "Pathogen thrives in all water sources",
+    cost: 20,
+    type: "water",
+    level: 3,
+    unlocked: false,
+  },
+
+  // Insect transmission
+  {
+    id: "insect1",
+    name: "Insect 1",
+    description: "Insects can carry and transmit pathogen",
+    cost: 6,
+    type: "insect",
+    level: 1,
+    unlocked: false,
+  },
+  {
+    id: "insect2",
+    name: "Insect 2",
+    description: "More insect species become carriers",
+    cost: 12,
+    type: "insect",
+    level: 2,
+    unlocked: false,
+  },
+  {
+    id: "insect3",
+    name: "Extreme Zoonosis",
+    description: "All insects become potential carriers",
+    cost: 22,
+    type: "insect",
+    level: 3,
+    unlocked: false,
+  },
+
+  // Blood transmission
+  {
+    id: "blood1",
+    name: "Blood 1",
+    description: "Pathogen transmits through blood contact",
+    cost: 4,
+    type: "blood",
+    level: 1,
+    unlocked: false,
+  },
+  {
+    id: "blood2",
+    name: "Blood 2",
+    description: "Pathogen survives longer outside body",
+    cost: 8,
+    type: "blood",
+    level: 2,
+    unlocked: false,
+  },
+  {
+    id: "blood3",
+    name: "Extreme Hematophagy",
+    description: "Pathogen actively seeks blood transmission",
+    cost: 18,
+    type: "blood",
+    level: 3,
+    unlocked: false,
+  },
+];

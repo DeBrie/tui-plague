@@ -1,0 +1,103 @@
+export interface Country {
+    id: string;
+    name: string;
+    population: number;
+    infected: number;
+    dead: number;
+    healthy: number;
+    climate: "hot" | "cold" | "temperate";
+    wealth: "rich" | "poor" | "average";
+    density: "urban" | "rural" | "mixed";
+    borders: string[];
+    airports: boolean;
+    seaports: boolean;
+    isOpen: boolean;
+    airportOpen: boolean;
+    seaportOpen: boolean;
+    awareness: number;
+    cureContribution: number;
+}
+export interface Plague {
+    name: string;
+    infectivity: number;
+    severity: number;
+    lethality: number;
+    airborne: number;
+    waterborne: number;
+    insectborne: number;
+    bloodborne: number;
+    coldResistance: number;
+    heatResistance: number;
+    drugResistance: number;
+    symptoms: Symptom[];
+}
+export interface Symptom {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    infectivityBonus: number;
+    severityBonus: number;
+    lethalityBonus: number;
+    unlocked: boolean;
+    requires?: string[];
+}
+export interface Transmission {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    type: "air" | "water" | "insect" | "blood";
+    level: number;
+    unlocked: boolean;
+}
+export interface Ability {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    type: "cold" | "heat" | "drug";
+    level: number;
+    unlocked: boolean;
+}
+export interface GameState {
+    plague: Plague;
+    countries: Country[];
+    dnaPoints: number;
+    day: number;
+    gameSpeed: number;
+    isPaused: boolean;
+    cureProgress: number;
+    totalInfected: number;
+    totalDead: number;
+    totalPopulation: number;
+    gameOver: boolean;
+    victory: boolean;
+    startingCountry: string | null;
+    gameStarted: boolean;
+    selectedTab: "world" | "disease" | "abilities";
+}
+export type GameAction = {
+    type: "START_GAME";
+    countryId: string;
+    plagueName: string;
+} | {
+    type: "TICK";
+} | {
+    type: "TOGGLE_PAUSE";
+} | {
+    type: "SET_SPEED";
+    speed: number;
+} | {
+    type: "EVOLVE_SYMPTOM";
+    symptomId: string;
+} | {
+    type: "EVOLVE_TRANSMISSION";
+    transmissionId: string;
+} | {
+    type: "EVOLVE_ABILITY";
+    abilityId: string;
+} | {
+    type: "SET_TAB";
+    tab: "world" | "disease" | "abilities";
+};

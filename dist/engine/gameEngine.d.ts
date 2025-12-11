@@ -1,0 +1,10 @@
+import { GameState, Symptom, Transmission, Ability } from "../types.js";
+export declare const getSymptoms: () => Symptom[];
+export declare const getTransmissions: () => Transmission[];
+export declare const getAbilities: () => Ability[];
+export declare const createInitialState: () => GameState;
+export declare const gameTick: (state: GameState) => GameState;
+export declare const evolveSymptom: (state: GameState, symptomId: string) => GameState;
+export declare const evolveTransmission: (state: GameState, transmissionId: string) => GameState;
+export declare const evolveAbility: (state: GameState, abilityId: string) => GameState;
+export declare const startGame: (state: GameState, countryId: string, plagueName: string) => GameState;
