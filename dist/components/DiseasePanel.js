@@ -59,7 +59,7 @@ export const DiseasePanel = ({ symptoms, transmissions, abilities, dnaPoints, on
     };
     return (React.createElement(Box, { flexDirection: "column", borderStyle: "single", borderColor: "magenta", paddingX: 1 },
         React.createElement(Box, null,
-            React.createElement(Text, { bold: true, color: "magenta" }, "\uD83E\uDDEC Disease Evolution"),
+            React.createElement(Text, { bold: true, color: "magenta" }, "[DISEASE EVOLUTION]"),
             React.createElement(Text, null, " | DNA: "),
             React.createElement(Text, { color: "cyan", bold: true }, dnaPoints)),
         React.createElement(Box, { marginTop: 1 },
@@ -75,7 +75,7 @@ export const DiseasePanel = ({ symptoms, transmissions, abilities, dnaPoints, on
             let statusText = `[${item.cost} DNA]`;
             if (item.unlocked) {
                 statusColor = 'green';
-                statusText = '✓ Evolved';
+                statusText = '[OK] Evolved';
             }
             else if (canBuy) {
                 statusColor = 'cyan';
@@ -85,7 +85,7 @@ export const DiseasePanel = ({ symptoms, transmissions, abilities, dnaPoints, on
             }
             return (React.createElement(Box, { key: item.id, flexDirection: "column" },
                 React.createElement(Text, { inverse: isSelected },
-                    React.createElement(Text, { color: statusColor }, isSelected ? '▶ ' : '  '),
+                    React.createElement(Text, { color: statusColor }, isSelected ? '> ' : '  '),
                     React.createElement(Text, { bold: !item.unlocked }, item.name),
                     React.createElement(Text, { color: statusColor },
                         " ",
@@ -111,5 +111,5 @@ export const DiseasePanel = ({ symptoms, transmissions, abilities, dnaPoints, on
                         " LTH"))))));
         })),
         React.createElement(Box, { marginTop: 1 },
-            React.createElement(Text, { dimColor: true }, "\u2191\u2193 Navigate | Enter: Evolve | 1-3: Switch tabs"))));
+            React.createElement(Text, { dimColor: true }, "Up/Down: Navigate | Enter: Evolve | 1-3: Switch tabs"))));
 };

@@ -7,11 +7,14 @@ import { DiseasePanel } from './components/DiseasePanel.js';
 import { StartScreen } from './components/StartScreen.js';
 import { GameOverScreen } from './components/GameOverScreen.js';
 import { HelpPanel } from './components/HelpPanel.js';
+import { TransitPanel } from './components/TransitPanel.js';
+import { NewsReel } from './components/NewsReel.js';
 export const App = () => {
     const { exit } = useApp();
-    const [gameState, setGameState] = useState(createInitialState);
+    const [gameState, setGameState] = useState(() => createInitialState('normal'));
     const [activePanel, setActivePanel] = useState('disease');
     const [selectedCountry, setSelectedCountry] = useState(null);
+    const [showTransits, setShowTransits] = useState(true);
     // Game tick loop
     useEffect(() => {
         if (!gameState.gameStarted || gameState.isPaused || gameState.gameOver) {
@@ -24,12 +27,15 @@ export const App = () => {
         return () => clearInterval(timer);
     }, [gameState.gameStarted, gameState.isPaused, gameState.gameOver, gameState.gameSpeed]);
     // Handle game start
-    const handleStart = useCallback((countryId, plagueName) => {
-        setGameState(prev => startGame(prev, countryId, plagueName));
+    const handleStart = useCallback((countryId, plagueName, difficulty) => {
+        setGameState(prev => {
+            const newState = createInitialState(difficulty);
+            return startGame(newState, countryId, plagueName);
+        });
     }, []);
     // Handle restart
     const handleRestart = useCallback(() => {
-        setGameState(createInitialState());
+        setGameState(createInitialState('normal'));
     }, []);
     // Handle evolving
     const handleEvolveSymptom = useCallback((id) => {
@@ -43,8 +49,8 @@ export const App = () => {
     }, []);
     // Global input handling
     useInput((input, key) => {
-        // Quit game
-        if (input === 'q' || input === 'Q') {
+        // Quit game (only when game is running, not during name input)
+        if (key.escape && gameState.gameStarted) {
             exit();
             return;
         }
@@ -66,6 +72,10 @@ export const App = () => {
         if (key.tab) {
             setActivePanel(prev => prev === 'world' ? 'disease' : 'world');
         }
+        // Toggle transit panel
+        if (input === 't' || input === 'T') {
+            setShowTransits(prev => !prev);
+        }
     });
     // Show start screen
     if (!gameState.gameStarted) {
@@ -80,8 +90,10 @@ export const App = () => {
         React.createElement(Header, { state: gameState }),
         React.createElement(Box, { flexDirection: "row", marginTop: 1 },
             React.createElement(Box, { flexDirection: "column", width: "60%" },
-                React.createElement(WorldMap, { countries: gameState.countries, selectedCountry: selectedCountry, onSelectCountry: setSelectedCountry })),
+                React.createElement(WorldMap, { countries: gameState.countries, selectedCountry: selectedCountry, onSelectCountry: setSelectedCountry }),
+                showTransits && (React.createElement(TransitPanel, { transits: gameState.recentTransits, countries: gameState.countries, currentDay: gameState.day }))),
             React.createElement(Box, { flexDirection: "column", width: "40%" },
-                React.createElement(DiseasePanel, { symptoms: getSymptoms(), transmissions: getTransmissions(), abilities: getAbilities(), dnaPoints: gameState.dnaPoints, onEvolveSymptom: handleEvolveSymptom, onEvolveTransmission: handleEvolveTransmission, onEvolveAbility: handleEvolveAbility, isActive: activePanel === 'disease' }))),
+                React.createElement(DiseasePanel, { symptoms: getSymptoms(), transmissions: getTransmissions(), abilities: getAbilities(), dnaPoints: gameState.dnaPoints, onEvolveSymptom: handleEvolveSymptom, onEvolveTransmission: handleEvolveTransmission, onEvolveAbility: handleEvolveAbility, isActive: activePanel === 'disease' }),
+                React.createElement(NewsReel, { newsItems: gameState.newsItems, maxItems: 6 }))),
         React.createElement(HelpPanel, null)));
 };

@@ -31,10 +31,10 @@ const getCountryColor = (country: Country): string => {
 
 const getStatusIcon = (country: Country): string => {
     const icons: string[] = [];
-    if (!country.isOpen) icons.push('🚫');
-    if (!country.airportOpen && country.airports) icons.push('✈️');
-    if (!country.seaportOpen && country.seaports) icons.push('🚢');
-    if (country.awareness > 50) icons.push('👁️');
+    if (!country.isOpen) icons.push('[X]');
+    if (!country.airportOpen && country.airports) icons.push('[A]');
+    if (!country.seaportOpen && country.seaports) icons.push('[S]');
+    if (country.awareness > 50) icons.push('[!]');
     return icons.join('') || '';
 };
 
@@ -51,7 +51,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ countries, selectedCountry, 
 
     return (
         <Box flexDirection="column" borderStyle="single" borderColor="blue" paddingX={1}>
-            <Text bold color="blue">🌍 World Map</Text>
+            <Text bold color="blue">[WORLD MAP]</Text>
             <Box flexDirection="row" flexWrap="wrap" marginTop={1}>
                 {Object.entries(regions).map(([region, regionCountries]) => (
                     <Box key={region} flexDirection="column" marginRight={2} marginBottom={1} width={30}>
@@ -61,6 +61,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ countries, selectedCountry, 
                             const isSelected = country.id === selectedCountry;
                             const infectedPct = ((country.infected / country.population) * 100).toFixed(1);
                             const deadPct = ((country.dead / country.population) * 100).toFixed(1);
+                            const statusIcons = getStatusIcon(country);
 
                             return (
                                 <Box key={country.id} flexDirection="column">
@@ -68,10 +69,10 @@ export const WorldMap: React.FC<WorldMapProps> = ({ countries, selectedCountry, 
                                         color={color}
                                         inverse={isSelected}
                                     >
-                                        {country.name} {getStatusIcon(country)}
+                                        {country.name}{statusIcons ? ' ' + statusIcons : ''}
                                     </Text>
                                     <Text dimColor>
-                                        {' '}↳ I:{formatNumber(country.infected)}({infectedPct}%) D:{formatNumber(country.dead)}({deadPct}%)
+                                        {' '}&gt; I:{formatNumber(country.infected)}({infectedPct}%) D:{formatNumber(country.dead)}({deadPct}%)
                                     </Text>
                                 </Box>
                             );

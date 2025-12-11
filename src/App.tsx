@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, useApp, useInput } from 'ink';
-import { GameState } from './types.js';
+import { GameState, Difficulty } from './types.js';
 import {
     createInitialState,
     gameTick,
@@ -18,14 +18,17 @@ import { DiseasePanel } from './components/DiseasePanel.js';
 import { StartScreen } from './components/StartScreen.js';
 import { GameOverScreen } from './components/GameOverScreen.js';
 import { HelpPanel } from './components/HelpPanel.js';
+import { TransitPanel } from './components/TransitPanel.js';
+import { NewsReel } from './components/NewsReel.js';
 
 type ActivePanel = 'world' | 'disease';
 
 export const App: React.FC = () => {
     const { exit } = useApp();
-    const [gameState, setGameState] = useState<GameState>(createInitialState);
+    const [gameState, setGameState] = useState<GameState>(() => createInitialState('normal'));
     const [activePanel, setActivePanel] = useState<ActivePanel>('disease');
     const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+    const [showTransits, setShowTransits] = useState(true);
 
     // Game tick loop
     useEffect(() => {
@@ -42,13 +45,16 @@ export const App: React.FC = () => {
     }, [gameState.gameStarted, gameState.isPaused, gameState.gameOver, gameState.gameSpeed]);
 
     // Handle game start
-    const handleStart = useCallback((countryId: string, plagueName: string) => {
-        setGameState(prev => startGame(prev, countryId, plagueName));
+    const handleStart = useCallback((countryId: string, plagueName: string, difficulty: Difficulty) => {
+        setGameState(prev => {
+            const newState = createInitialState(difficulty);
+            return startGame(newState, countryId, plagueName);
+        });
     }, []);
 
     // Handle restart
     const handleRestart = useCallback(() => {
-        setGameState(createInitialState());
+        setGameState(createInitialState('normal'));
     }, []);
 
     // Handle evolving
@@ -66,8 +72,8 @@ export const App: React.FC = () => {
 
     // Global input handling
     useInput((input, key) => {
-        // Quit game
-        if (input === 'q' || input === 'Q') {
+        // Quit game (only when game is running, not during name input)
+        if (key.escape && gameState.gameStarted) {
             exit();
             return;
         }
@@ -91,6 +97,11 @@ export const App: React.FC = () => {
         // Tab switching
         if (key.tab) {
             setActivePanel(prev => prev === 'world' ? 'disease' : 'world');
+        }
+
+        // Toggle transit panel
+        if (input === 't' || input === 'T') {
+            setShowTransits(prev => !prev);
         }
     });
 
@@ -116,6 +127,13 @@ export const App: React.FC = () => {
                         selectedCountry={selectedCountry}
                         onSelectCountry={setSelectedCountry}
                     />
+                    {showTransits && (
+                        <TransitPanel
+                            transits={gameState.recentTransits}
+                            countries={gameState.countries}
+                            currentDay={gameState.day}
+                        />
+                    )}
                 </Box>
 
                 <Box flexDirection="column" width="40%">
@@ -129,6 +147,7 @@ export const App: React.FC = () => {
                         onEvolveAbility={handleEvolveAbility}
                         isActive={activePanel === 'disease'}
                     />
+                    <NewsReel newsItems={gameState.newsItems} maxItems={6} />
                 </Box>
             </Box>
 

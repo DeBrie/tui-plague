@@ -5,11 +5,15 @@ import {
   Symptom,
   Transmission,
   Ability,
+  Difficulty,
+  TransitEvent,
+  NewsItem,
 } from "../types.js";
 import { createCountries } from "../data/countries.js";
 import { createSymptoms } from "../data/symptoms.js";
 import { createTransmissions } from "../data/transmissions.js";
 import { createAbilities } from "../data/abilities.js";
+import { generateNews, resetNewsTracker } from "./newsGenerator.js";
 
 // Store upgrades separately from game state
 let symptoms: Symptom[] = [];
@@ -20,7 +24,42 @@ export const getSymptoms = () => symptoms;
 export const getTransmissions = () => transmissions;
 export const getAbilities = () => abilities;
 
-export const createInitialState = (): GameState => {
+// Difficulty settings
+export interface DifficultySettings {
+  cureSpeedMultiplier: number;
+  awarenessMultiplier: number;
+  startingDna: number;
+  dnaGainMultiplier: number;
+  borderCloseChance: number;
+}
+
+export const DIFFICULTY_SETTINGS: Record<Difficulty, DifficultySettings> = {
+  easy: {
+    cureSpeedMultiplier: 0.3,
+    awarenessMultiplier: 0.5,
+    startingDna: 15,
+    dnaGainMultiplier: 1.5,
+    borderCloseChance: 0.5,
+  },
+  normal: {
+    cureSpeedMultiplier: 0.6,
+    awarenessMultiplier: 0.8,
+    startingDna: 10,
+    dnaGainMultiplier: 1.0,
+    borderCloseChance: 0.8,
+  },
+  hard: {
+    cureSpeedMultiplier: 1.0,
+    awarenessMultiplier: 1.2,
+    startingDna: 5,
+    dnaGainMultiplier: 0.7,
+    borderCloseChance: 1.2,
+  },
+};
+
+export const createInitialState = (
+  difficulty: Difficulty = "normal"
+): GameState => {
   const countries = createCountries();
   symptoms = createSymptoms();
   transmissions = createTransmissions();
@@ -57,6 +96,10 @@ export const createInitialState = (): GameState => {
     startingCountry: null,
     gameStarted: false,
     selectedTab: "world",
+    difficulty,
+    visibility: 0,
+    recentTransits: [],
+    newsItems: [],
   };
 };
 
@@ -113,30 +156,35 @@ const canSpreadTo = (
   countries: Country[]
 ): boolean => {
   if (to.infected > 0) return true; // Already infected
-  if (!to.isOpen && !from.borders.includes(to.id)) return false;
 
-  // Check land borders
-  if (from.borders.includes(to.id) && from.isOpen && to.isOpen) {
-    return true;
+  // Check land borders - always possible if borders are open
+  if (from.borders.includes(to.id)) {
+    // Can spread via land if either country has open borders
+    if (from.isOpen || to.isOpen) {
+      return true;
+    }
   }
 
-  // Check air travel
+  // Check air travel - requires both airports open
   if (from.airports && from.airportOpen && to.airports && to.airportOpen) {
-    if (plague.airborne >= 1) return true;
+    return true; // Air travel always possible when airports open
   }
 
-  // Check sea travel
+  // Check sea travel - requires both seaports open
   if (from.seaports && from.seaportOpen && to.seaports && to.seaportOpen) {
-    if (plague.waterborne >= 1) return true;
+    return true; // Sea travel always possible when seaports open
   }
 
   return false;
 };
 
-// Spread infection between countries
-const spreadBetweenCountries = (state: GameState): Country[] => {
-  const { countries, plague } = state;
+// Spread infection between countries - returns updated countries and transit events
+const spreadBetweenCountries = (
+  state: GameState
+): { countries: Country[]; transits: TransitEvent[] } => {
+  const { countries, plague, day } = state;
   const updatedCountries = [...countries];
+  const newTransits: TransitEvent[] = [];
 
   for (const country of countries) {
     if (country.infected === 0) continue;
@@ -149,24 +197,56 @@ const spreadBetweenCountries = (state: GameState): Country[] => {
       if (canSpreadTo(country, other, plague, countries)) {
         // Calculate spread chance based on infected population
         const infectedRatio = country.infected / country.population;
-        let spreadChance = infectedRatio * 0.1;
+        // Base chance is much higher - 50% at full infection
+        let spreadChance = infectedRatio * 0.5;
 
-        // Transmission bonuses
+        // Determine transit type and apply bonuses
+        let transitType: "air" | "sea" | "land" = "air"; // Default for non-border
+
+        // Land borders have highest spread chance
         if (country.borders.includes(other.id)) {
-          spreadChance *= 1.5;
+          spreadChance *= 2.0; // Double chance for land borders
+          transitType = "land";
+
+          // Extra bonus if both borders fully open
+          if (country.isOpen && other.isOpen) {
+            spreadChance *= 1.5;
+          }
         }
-        if (plague.airborne > 0 && country.airports && other.airports) {
+
+        // Air travel bonuses
+        if (
+          country.airports &&
+          other.airports &&
+          country.airportOpen &&
+          other.airportOpen
+        ) {
           spreadChance *= 1 + plague.airborne * 0.3;
+          if (!country.borders.includes(other.id)) transitType = "air";
         }
-        if (plague.waterborne > 0 && country.seaports && other.seaports) {
+
+        // Sea travel bonuses
+        if (
+          country.seaports &&
+          other.seaports &&
+          country.seaportOpen &&
+          other.seaportOpen
+        ) {
           spreadChance *= 1 + plague.waterborne * 0.3;
+          if (!country.borders.includes(other.id) && transitType !== "air")
+            transitType = "sea";
         }
+
+        // Insect transmission bonus in hot climates
         if (
           plague.insectborne > 0 &&
           (country.climate === "hot" || other.climate === "hot")
         ) {
           spreadChance *= 1 + plague.insectborne * 0.2;
         }
+
+        // Infectivity bonus
+        spreadChance *= 1 + plague.infectivity * 0.02;
 
         if (Math.random() < spreadChance) {
           const idx = updatedCountries.findIndex((c) => c.id === other.id);
@@ -176,12 +256,54 @@ const spreadBetweenCountries = (state: GameState): Country[] => {
             infected: initialInfected,
             healthy: other.healthy - initialInfected,
           };
+
+          // Record transit event
+          newTransits.push({
+            id: `${country.id}-${other.id}-${day}`,
+            from: country.id,
+            to: other.id,
+            type: transitType,
+            day,
+            infected: initialInfected,
+          });
         }
       }
     }
   }
 
-  return updatedCountries;
+  return { countries: updatedCountries, transits: newTransits };
+};
+
+// Calculate visibility based on plague stats and global situation
+const calculateVisibility = (
+  plague: Plague,
+  totalInfected: number,
+  totalDead: number,
+  totalPop: number
+): number => {
+  let visibility = 0;
+
+  // Severity directly increases visibility
+  visibility += plague.severity * 0.5;
+
+  // Lethality makes it very noticeable
+  visibility += plague.lethality * 0.8;
+
+  // Symptoms that are visible
+  for (const symptom of plague.symptoms) {
+    visibility += symptom.severityBonus * 0.3;
+    visibility += symptom.lethalityBonus * 0.5;
+  }
+
+  // Global infection rate
+  const infectedRatio = totalInfected / totalPop;
+  visibility += infectedRatio * 100;
+
+  // Deaths are very noticeable
+  const deadRatio = totalDead / totalPop;
+  visibility += deadRatio * 200;
+
+  return Math.min(100, Math.max(0, visibility));
 };
 
 // Update country response (close borders, etc.)
@@ -189,40 +311,61 @@ const updateCountryResponse = (
   country: Country,
   globalInfected: number,
   globalDead: number,
-  totalPop: number
+  totalPop: number,
+  difficulty: Difficulty,
+  visibility: number
 ): Country => {
   const updated = { ...country };
+  const settings = DIFFICULTY_SETTINGS[difficulty];
 
   // Increase awareness based on local and global situation
   const localInfectedRatio = country.infected / country.population;
+  const localDeadRatio = country.dead / country.population;
   const globalInfectedRatio = globalInfected / totalPop;
   const globalDeadRatio = globalDead / totalPop;
 
   let awarenessIncrease = 0;
-  if (localInfectedRatio > 0.001) awarenessIncrease += 0.5;
-  if (localInfectedRatio > 0.01) awarenessIncrease += 1;
-  if (localInfectedRatio > 0.1) awarenessIncrease += 2;
-  if (globalInfectedRatio > 0.01) awarenessIncrease += 0.3;
-  if (globalDeadRatio > 0.001) awarenessIncrease += 1;
+  if (localInfectedRatio > 0.001) awarenessIncrease += 0.3;
+  if (localInfectedRatio > 0.01) awarenessIncrease += 0.5;
+  if (localInfectedRatio > 0.1) awarenessIncrease += 1;
+  if (globalInfectedRatio > 0.01) awarenessIncrease += 0.2;
+  if (globalDeadRatio > 0.001) awarenessIncrease += 0.5;
+
+  // Visibility affects awareness gain
+  awarenessIncrease *= 1 + visibility / 100;
+  awarenessIncrease *= settings.awarenessMultiplier;
 
   updated.awareness = Math.min(100, country.awareness + awarenessIncrease);
 
-  // Countries may close borders/ports based on awareness
-  if (updated.awareness > 30 && Math.random() < 0.02) {
+  // Countries may close borders/ports based on awareness - scaled by difficulty
+  const closeChance = settings.borderCloseChance;
+  if (updated.awareness > 40 && Math.random() < 0.015 * closeChance) {
     updated.isOpen = false;
   }
-  if (updated.awareness > 50 && Math.random() < 0.03) {
+  if (updated.awareness > 60 && Math.random() < 0.02 * closeChance) {
     updated.airportOpen = false;
   }
-  if (updated.awareness > 70 && Math.random() < 0.02) {
+  if (updated.awareness > 80 && Math.random() < 0.015 * closeChance) {
     updated.seaportOpen = false;
   }
 
-  // Rich countries contribute more to cure
+  // Cure contribution - reduced when country has high death rate (resources diverted)
   if (updated.awareness > 20 && country.infected > 0) {
     const wealthMultiplier =
       country.wealth === "rich" ? 2 : country.wealth === "average" ? 1 : 0.5;
-    updated.cureContribution = updated.awareness * wealthMultiplier * 0.01;
+
+    // Deaths reduce cure contribution (overwhelmed healthcare)
+    const deathPenalty = Math.max(0.2, 1 - localDeadRatio * 5);
+
+    // Infected population reduces research capacity
+    const infectedPenalty = Math.max(0.3, 1 - localInfectedRatio * 2);
+
+    updated.cureContribution =
+      updated.awareness *
+      wealthMultiplier *
+      0.01 *
+      deathPenalty *
+      infectedPenalty;
   }
 
   return updated;
@@ -234,8 +377,16 @@ export const gameTick = (state: GameState): GameState => {
     return state;
   }
 
-  let { countries, plague, dnaPoints, cureProgress, totalInfected, totalDead } =
-    state;
+  const settings = DIFFICULTY_SETTINGS[state.difficulty];
+  let {
+    countries,
+    plague,
+    dnaPoints,
+    cureProgress,
+    totalInfected,
+    totalDead,
+    recentTransits,
+  } = state;
 
   // Update each country
   countries = countries.map((country) => {
@@ -265,45 +416,76 @@ export const gameTick = (state: GameState): GameState => {
   });
 
   // Spread between countries
-  countries = spreadBetweenCountries({ ...state, countries });
+  const spreadResult = spreadBetweenCountries({ ...state, countries });
+  countries = spreadResult.countries;
+
+  // Keep only recent transits (last 20 days)
+  const newTransits = [...recentTransits, ...spreadResult.transits]
+    .filter((t) => state.day - t.day < 20)
+    .slice(-50); // Keep max 50 events
 
   // Update country responses
   const newTotalInfected = countries.reduce((sum, c) => sum + c.infected, 0);
   const newTotalDead = countries.reduce((sum, c) => sum + c.dead, 0);
+
+  // Calculate visibility
+  const visibility = calculateVisibility(
+    plague,
+    newTotalInfected,
+    newTotalDead,
+    state.totalPopulation
+  );
 
   countries = countries.map((c) =>
     updateCountryResponse(
       c,
       newTotalInfected,
       newTotalDead,
-      state.totalPopulation
+      state.totalPopulation,
+      state.difficulty,
+      visibility
     )
   );
 
-  // Generate DNA points based on infections and deaths
+  // Generate DNA points based on infections and deaths - scaled by difficulty
   const infectionGain = Math.floor((newTotalInfected - totalInfected) / 100000);
   const deathGain = Math.floor((newTotalDead - totalDead) / 50000);
-  dnaPoints += Math.max(0, infectionGain + deathGain);
+  dnaPoints += Math.max(
+    0,
+    Math.floor((infectionGain + deathGain) * settings.dnaGainMultiplier)
+  );
 
   // Random DNA point bubbles
   if (Math.random() < 0.1 && newTotalInfected > 1000) {
-    dnaPoints += Math.floor(Math.random() * 3) + 1;
+    dnaPoints += Math.floor(
+      (Math.random() * 3 + 1) * settings.dnaGainMultiplier
+    );
   }
 
-  // Update cure progress
+  // Update cure progress - scaled by difficulty and affected by global death rate
   const totalCureContribution = countries.reduce(
     (sum, c) => sum + c.cureContribution,
     0
   );
-  const cureSpeed = totalCureContribution * (1 - plague.drugResistance * 0.1);
-  cureProgress = Math.min(100, cureProgress + cureSpeed * 0.1);
+
+  // Global death rate slows cure (scientists dying, resources diverted)
+  const globalDeathRatio = newTotalDead / state.totalPopulation;
+  const deathSlowdown = Math.max(0.1, 1 - globalDeathRatio * 3);
+
+  const cureSpeed =
+    totalCureContribution *
+    (1 - plague.drugResistance * 0.15) *
+    deathSlowdown *
+    settings.cureSpeedMultiplier;
+  cureProgress = Math.min(100, cureProgress + cureSpeed * 0.08);
 
   // Check win/lose conditions
   const totalHealthy = countries.reduce((sum, c) => sum + c.healthy, 0);
   const allDead = totalHealthy === 0 && newTotalInfected === 0;
   const cureComplete = cureProgress >= 100;
 
-  return {
+  // Build new state before generating news
+  const newState: GameState = {
     ...state,
     countries,
     dnaPoints,
@@ -313,6 +495,20 @@ export const gameTick = (state: GameState): GameState => {
     totalDead: newTotalDead,
     gameOver: allDead || cureComplete,
     victory: allDead,
+    visibility,
+    recentTransits: newTransits,
+    newsItems: state.newsItems,
+  };
+
+  // Generate news based on state changes
+  const newNews = generateNews(state, newState);
+
+  // Keep last 50 news items
+  const allNews = [...state.newsItems, ...newNews].slice(-50);
+
+  return {
+    ...newState,
+    newsItems: allNews,
   };
 };
 
@@ -445,6 +641,10 @@ export const startGame = (
   const countryIdx = state.countries.findIndex((c) => c.id === countryId);
   if (countryIdx === -1) return state;
 
+  // Reset news tracker for new game
+  resetNewsTracker();
+
+  const settings = DIFFICULTY_SETTINGS[state.difficulty];
   const countries = [...state.countries];
   const country = countries[countryIdx];
 
@@ -469,7 +669,7 @@ export const startGame = (
     startingCountry: countryId,
     gameStarted: true,
     isPaused: false,
-    dnaPoints: 5, // Starting DNA points
+    dnaPoints: settings.startingDna,
     totalInfected: initialInfected,
   };
 };

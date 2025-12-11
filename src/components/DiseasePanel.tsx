@@ -90,7 +90,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
     return (
         <Box flexDirection="column" borderStyle="single" borderColor="magenta" paddingX={1}>
             <Box>
-                <Text bold color="magenta">🧬 Disease Evolution</Text>
+                <Text bold color="magenta">[DISEASE EVOLUTION]</Text>
                 <Text> | DNA: </Text>
                 <Text color="cyan" bold>{dnaPoints}</Text>
             </Box>
@@ -119,7 +119,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
 
                     if (item.unlocked) {
                         statusColor = 'green';
-                        statusText = '✓ Evolved';
+                        statusText = '[OK] Evolved';
                     } else if (canBuy) {
                         statusColor = 'cyan';
                     } else if (dnaPoints < item.cost) {
@@ -129,7 +129,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
                     return (
                         <Box key={item.id} flexDirection="column">
                             <Text inverse={isSelected}>
-                                <Text color={statusColor}>{isSelected ? '▶ ' : '  '}</Text>
+                                <Text color={statusColor}>{isSelected ? '> ' : '  '}</Text>
                                 <Text bold={!item.unlocked}>{item.name}</Text>
                                 <Text color={statusColor}> {statusText}</Text>
                             </Text>
@@ -156,7 +156,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
             </Box>
 
             <Box marginTop={1}>
-                <Text dimColor>↑↓ Navigate | Enter: Evolve | 1-3: Switch tabs</Text>
+                <Text dimColor>Up/Down: Navigate | Enter: Evolve | 1-3: Switch tabs</Text>
             </Box>
         </Box>
     );

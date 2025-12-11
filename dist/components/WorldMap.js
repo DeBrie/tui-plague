@@ -29,13 +29,13 @@ const getCountryColor = (country) => {
 const getStatusIcon = (country) => {
     const icons = [];
     if (!country.isOpen)
-        icons.push('🚫');
+        icons.push('[X]');
     if (!country.airportOpen && country.airports)
-        icons.push('✈️');
+        icons.push('[A]');
     if (!country.seaportOpen && country.seaports)
-        icons.push('🚢');
+        icons.push('[S]');
     if (country.awareness > 50)
-        icons.push('👁️');
+        icons.push('[!]');
     return icons.join('') || '';
 };
 export const WorldMap = ({ countries, selectedCountry, onSelectCountry }) => {
@@ -49,7 +49,7 @@ export const WorldMap = ({ countries, selectedCountry, onSelectCountry }) => {
         'Oceania': countries.filter(c => ['australia', 'indonesia'].includes(c.id)),
     };
     return (React.createElement(Box, { flexDirection: "column", borderStyle: "single", borderColor: "blue", paddingX: 1 },
-        React.createElement(Text, { bold: true, color: "blue" }, "\uD83C\uDF0D World Map"),
+        React.createElement(Text, { bold: true, color: "blue" }, "[WORLD MAP]"),
         React.createElement(Box, { flexDirection: "row", flexWrap: "wrap", marginTop: 1 }, Object.entries(regions).map(([region, regionCountries]) => (React.createElement(Box, { key: region, flexDirection: "column", marginRight: 2, marginBottom: 1, width: 30 },
             React.createElement(Text, { bold: true, underline: true }, region),
             regionCountries.map(country => {
@@ -57,14 +57,14 @@ export const WorldMap = ({ countries, selectedCountry, onSelectCountry }) => {
                 const isSelected = country.id === selectedCountry;
                 const infectedPct = ((country.infected / country.population) * 100).toFixed(1);
                 const deadPct = ((country.dead / country.population) * 100).toFixed(1);
+                const statusIcons = getStatusIcon(country);
                 return (React.createElement(Box, { key: country.id, flexDirection: "column" },
                     React.createElement(Text, { color: color, inverse: isSelected },
                         country.name,
-                        " ",
-                        getStatusIcon(country)),
+                        statusIcons ? ' ' + statusIcons : ''),
                     React.createElement(Text, { dimColor: true },
                         ' ',
-                        "\u21B3 I:",
+                        "> I:",
                         formatNumber(country.infected),
                         "(",
                         infectedPct,

@@ -13,12 +13,16 @@ export const HelpPanel: React.FC = () => {
                 </Box>
                 <Box flexDirection="column">
                     <Text dimColor>1-3: Disease sub-tabs</Text>
-                    <Text dimColor>↑↓: Navigate</Text>
+                    <Text dimColor>Up/Down: Navigate</Text>
                     <Text dimColor>Enter: Select/Evolve</Text>
                 </Box>
                 <Box flexDirection="column">
-                    <Text dimColor>Q: Quit game</Text>
+                    <Text dimColor>T: Toggle transits</Text>
+                    <Text dimColor>Esc: Quit game</Text>
                 </Box>
+            </Box>
+            <Box marginTop={1}>
+                <Text dimColor>Legend: [X]=Borders Closed [A]=Airport Closed [S]=Seaport Closed [!]=High Awareness</Text>
             </Box>
         </Box>
     );

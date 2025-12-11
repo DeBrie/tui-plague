@@ -73,6 +73,43 @@ export interface Ability {
   unlocked: boolean;
 }
 
+export type Difficulty = "easy" | "normal" | "hard";
+
+export interface TransitEvent {
+  id: string;
+  from: string;
+  to: string;
+  type: "air" | "sea" | "land";
+  day: number;
+  infected: number;
+}
+
+export type NewsType =
+  | "first_case"
+  | "spread_to_country"
+  | "deaths_start"
+  | "mass_deaths"
+  | "border_closed"
+  | "airport_closed"
+  | "seaport_closed"
+  | "cure_started"
+  | "cure_progress"
+  | "awareness"
+  | "symptom_noticed"
+  | "country_devastated"
+  | "panic"
+  | "research"
+  | "mutation"
+  | "general";
+
+export interface NewsItem {
+  id: string;
+  day: number;
+  type: NewsType;
+  headline: string;
+  priority: number; // higher = more important
+}
+
 export interface GameState {
   plague: Plague;
   countries: Country[];
@@ -89,6 +126,10 @@ export interface GameState {
   startingCountry: string | null;
   gameStarted: boolean;
   selectedTab: "world" | "disease" | "abilities";
+  difficulty: Difficulty;
+  visibility: number; // 0-100, how noticeable the disease is globally
+  recentTransits: TransitEvent[]; // recent transit events for visualization
+  newsItems: NewsItem[]; // news headlines
 }
 
 export type GameAction =

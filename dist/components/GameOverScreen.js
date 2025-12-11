@@ -19,29 +19,27 @@ export const GameOverScreen = ({ state, onRestart }) => {
     return (React.createElement(Box, { flexDirection: "column", alignItems: "center", paddingY: 2 },
         victory ? (React.createElement(React.Fragment, null,
             React.createElement(Text, { bold: true, color: "red" }, `
-    ██╗   ██╗██╗ ██████╗████████╗ ██████╗ ██████╗ ██╗   ██╗██╗
-    ██║   ██║██║██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗╚██╗ ██╔╝██║
-    ██║   ██║██║██║        ██║   ██║   ██║██████╔╝ ╚████╔╝ ██║
-    ╚██╗ ██╔╝██║██║        ██║   ██║   ██║██╔══██╗  ╚██╔╝  ╚═╝
-     ╚████╔╝ ██║╚██████╗   ██║   ╚██████╔╝██║  ██║   ██║   ██╗
-      ╚═══╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝
-            `),
+ __     _____ ____ _____ ___  ______   ___
+ \ \   / /_ _/ ___|_   _/ _ \|  _ \ \ / / |
+  \ \ / / | | |     | || | | | |_) \ V /| |
+   \ V /  | | |___  | || |_| |  _ < | | |_|
+    \_/  |___\____| |_| \___/|_| \_\|_| (_)
+`),
             React.createElement(Text, { color: "red", bold: true },
-                "\u2623 ",
+                "[*] ",
                 plague.name,
-                " has eradicated humanity! \u2623"))) : (React.createElement(React.Fragment, null,
+                " has eradicated humanity! [*]"))) : (React.createElement(React.Fragment, null,
             React.createElement(Text, { bold: true, color: "green" }, `
-    ██████╗ ███████╗███████╗███████╗ █████╗ ████████╗
-    ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗╚══██╔══╝
-    ██║  ██║█████╗  █████╗  █████╗  ███████║   ██║   
-    ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██╔══██║   ██║   
-    ██████╔╝███████╗██║     ███████╗██║  ██║   ██║   
-    ╚═════╝ ╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   
-            `),
+  ____  _____ _____ _____    _  _____ 
+ |  _ \| ____|  ___| ____|  / \|_   _|
+ | | | |  _| | |_  |  _|   / _ \ | |  
+ | |_| | |___|  _| | |___ / ___ \| |  
+ |____/|_____|_|   |_____/_/   \_\_|  
+`),
             React.createElement(Text, { color: "green", bold: true },
-                "\uD83D\uDC89 Humanity has developed a cure for ",
+                "[+] Humanity has developed a cure for ",
                 plague.name,
-                "! \uD83D\uDC89"))),
+                "! [+]"))),
         React.createElement(Box, { flexDirection: "column", marginTop: 2, borderStyle: "single", paddingX: 3, paddingY: 1 },
             React.createElement(Text, { bold: true }, "Final Statistics"),
             React.createElement(Text, null,

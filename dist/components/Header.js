@@ -9,17 +9,31 @@ const formatNumber = (num) => {
         return (num / 1000).toFixed(1) + 'K';
     return num.toString();
 };
+const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+        case 'easy': return 'green';
+        case 'normal': return 'yellow';
+        case 'hard': return 'red';
+        default: return 'white';
+    }
+};
 export const Header = ({ state }) => {
-    const { plague, day, dnaPoints, cureProgress, totalInfected, totalDead, totalPopulation, isPaused, gameSpeed } = state;
+    const { plague, day, dnaPoints, cureProgress, totalInfected, totalDead, totalPopulation, isPaused, gameSpeed, difficulty, visibility } = state;
     const healthyCount = totalPopulation - totalInfected - totalDead;
     const infectedPercent = ((totalInfected / totalPopulation) * 100).toFixed(2);
     const deadPercent = ((totalDead / totalPopulation) * 100).toFixed(2);
+    // Create progress bars using simple ASCII
+    const cureBarFilled = Math.floor(cureProgress / 5);
+    const cureBar = '#'.repeat(cureBarFilled) + '-'.repeat(20 - cureBarFilled);
+    const visBarFilled = Math.floor(visibility / 5);
+    const visBar = '#'.repeat(visBarFilled) + '-'.repeat(20 - visBarFilled);
+    const speedIndicator = isPaused ? 'PAUSED' : '>'.repeat(gameSpeed);
     return (React.createElement(Box, { flexDirection: "column", borderStyle: "double", borderColor: "red", paddingX: 1 },
         React.createElement(Box, { justifyContent: "space-between" },
             React.createElement(Text, { bold: true, color: "red" },
-                "\u2623 ",
+                "[*] ",
                 plague.name,
-                " \u2623"),
+                " [*]"),
             React.createElement(Text, null,
                 "Day: ",
                 React.createElement(Text, { color: "yellow" }, day),
@@ -29,7 +43,9 @@ export const Header = ({ state }) => {
                     dnaPoints),
                 ' | ',
                 "Speed: ",
-                React.createElement(Text, { color: "green" }, isPaused ? 'PAUSED' : '▶'.repeat(gameSpeed)))),
+                React.createElement(Text, { color: "green" }, speedIndicator),
+                ' | ',
+                React.createElement(Text, { color: getDifficultyColor(difficulty) }, difficulty.toUpperCase()))),
         React.createElement(Box, { marginTop: 1, justifyContent: "space-between" },
             React.createElement(Box, null,
                 React.createElement(Text, { color: "green" },
@@ -48,15 +64,27 @@ export const Header = ({ state }) => {
                     formatNumber(totalDead),
                     " (",
                     deadPercent,
-                    "%)")),
+                    "%)"))),
+        React.createElement(Box, { marginTop: 1, justifyContent: "space-between" },
             React.createElement(Box, null,
                 React.createElement(Text, null, "Cure: "),
                 React.createElement(Text, { color: cureProgress > 50 ? 'red' : cureProgress > 25 ? 'yellow' : 'green' },
-                    '█'.repeat(Math.floor(cureProgress / 5)),
-                    '░'.repeat(20 - Math.floor(cureProgress / 5))),
+                    "[",
+                    cureBar,
+                    "]"),
                 React.createElement(Text, null,
                     " ",
                     cureProgress.toFixed(1),
+                    "%")),
+            React.createElement(Box, null,
+                React.createElement(Text, null, "Visibility: "),
+                React.createElement(Text, { color: visibility > 50 ? 'red' : visibility > 25 ? 'yellow' : 'green' },
+                    "[",
+                    visBar,
+                    "]"),
+                React.createElement(Text, null,
+                    " ",
+                    visibility.toFixed(1),
                     "%"))),
         React.createElement(Box, { marginTop: 1 },
             React.createElement(Text, { dimColor: true },
