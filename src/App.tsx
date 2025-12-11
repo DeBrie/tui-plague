@@ -8,9 +8,11 @@ import {
     evolveSymptom,
     evolveTransmission,
     evolveAbility,
+    evolveSpecialAbility,
     getSymptoms,
     getTransmissions,
     getAbilities,
+    getSpecialAbilities,
 } from './engine/gameEngine.js';
 import { Header } from './components/Header.js';
 import { WorldMap } from './components/WorldMap.js';
@@ -68,6 +70,10 @@ export const App: React.FC = () => {
 
     const handleEvolveAbility = useCallback((id: string) => {
         setGameState(prev => evolveAbility(prev, id));
+    }, []);
+
+    const handleEvolveSpecial = useCallback((id: string) => {
+        setGameState(prev => evolveSpecialAbility(prev, id));
     }, []);
 
     // Global input handling
@@ -141,10 +147,12 @@ export const App: React.FC = () => {
                         symptoms={getSymptoms()}
                         transmissions={getTransmissions()}
                         abilities={getAbilities()}
+                        specialAbilities={getSpecialAbilities()}
                         dnaPoints={gameState.dnaPoints}
                         onEvolveSymptom={handleEvolveSymptom}
                         onEvolveTransmission={handleEvolveTransmission}
                         onEvolveAbility={handleEvolveAbility}
+                        onEvolveSpecial={handleEvolveSpecial}
                         isActive={activePanel === 'disease'}
                     />
                     <NewsReel newsItems={gameState.newsItems} maxItems={6} />

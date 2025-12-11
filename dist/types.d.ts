@@ -30,6 +30,11 @@ export interface Plague {
     heatResistance: number;
     drugResistance: number;
     symptoms: Symptom[];
+    cureSlowdown: number;
+    visibilityReduction: number;
+    borderBypass: number;
+    airportBypass: number;
+    seaportBypass: number;
 }
 export interface Symptom {
     id: string;
@@ -59,6 +64,21 @@ export interface Ability {
     type: "cold" | "heat" | "drug";
     level: number;
     unlocked: boolean;
+}
+export interface SpecialAbility {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    category: "stealth" | "mutation" | "resilience" | "spread" | "lethal";
+    effect: {
+        type: string;
+        value: number;
+    };
+    unlocked: boolean;
+    repeatable: boolean;
+    timesPurchased: number;
+    maxPurchases: number;
 }
 export type Difficulty = "easy" | "normal" | "hard";
 export interface TransitEvent {

@@ -39,6 +39,13 @@ export interface Plague {
 
   // Symptoms (each adds to severity/lethality/infectivity)
   symptoms: Symptom[];
+
+  // Special modifiers from abilities
+  cureSlowdown: number; // 0-1, reduces cure speed
+  visibilityReduction: number; // flat reduction to visibility
+  borderBypass: number; // chance to bypass closed borders
+  airportBypass: number; // chance to bypass closed airports
+  seaportBypass: number; // chance to bypass closed seaports
 }
 
 export interface Symptom {
@@ -71,6 +78,22 @@ export interface Ability {
   type: "cold" | "heat" | "drug";
   level: number;
   unlocked: boolean;
+}
+
+export interface SpecialAbility {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  category: "stealth" | "mutation" | "resilience" | "spread" | "lethal";
+  effect: {
+    type: string;
+    value: number;
+  };
+  unlocked: boolean;
+  repeatable: boolean;
+  timesPurchased: number;
+  maxPurchases: number;
 }
 
 export type Difficulty = "easy" | "normal" | "hard";

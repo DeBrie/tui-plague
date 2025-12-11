@@ -9,7 +9,7 @@ export const HelpPanel = () => {
                 React.createElement(Text, { dimColor: true }, "+/-: Change speed"),
                 React.createElement(Text, { dimColor: true }, "Tab: Switch panels")),
             React.createElement(Box, { flexDirection: "column" },
-                React.createElement(Text, { dimColor: true }, "1-3: Disease sub-tabs"),
+                React.createElement(Text, { dimColor: true }, "1-4: Disease sub-tabs"),
                 React.createElement(Text, { dimColor: true }, "Up/Down: Navigate"),
                 React.createElement(Text, { dimColor: true }, "Enter: Select/Evolve")),
             React.createElement(Box, { flexDirection: "column" },

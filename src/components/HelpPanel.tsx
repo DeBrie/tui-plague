@@ -12,7 +12,7 @@ export const HelpPanel: React.FC = () => {
                     <Text dimColor>Tab: Switch panels</Text>
                 </Box>
                 <Box flexDirection="column">
-                    <Text dimColor>1-3: Disease sub-tabs</Text>
+                    <Text dimColor>1-4: Disease sub-tabs</Text>
                     <Text dimColor>Up/Down: Navigate</Text>
                     <Text dimColor>Enter: Select/Evolve</Text>
                 </Box>

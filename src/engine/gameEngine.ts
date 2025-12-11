@@ -8,21 +8,25 @@ import {
   Difficulty,
   TransitEvent,
   NewsItem,
+  SpecialAbility,
 } from "../types.js";
 import { createCountries } from "../data/countries.js";
 import { createSymptoms } from "../data/symptoms.js";
 import { createTransmissions } from "../data/transmissions.js";
 import { createAbilities } from "../data/abilities.js";
+import { createSpecialAbilities } from "../data/specialAbilities.js";
 import { generateNews, resetNewsTracker } from "./newsGenerator.js";
 
 // Store upgrades separately from game state
 let symptoms: Symptom[] = [];
 let transmissions: Transmission[] = [];
 let abilities: Ability[] = [];
+let specialAbilities: SpecialAbility[] = [];
 
 export const getSymptoms = () => symptoms;
 export const getTransmissions = () => transmissions;
 export const getAbilities = () => abilities;
+export const getSpecialAbilities = () => specialAbilities;
 
 // Difficulty settings
 export interface DifficultySettings {
@@ -64,6 +68,7 @@ export const createInitialState = (
   symptoms = createSymptoms();
   transmissions = createTransmissions();
   abilities = createAbilities();
+  specialAbilities = createSpecialAbilities();
 
   const totalPopulation = countries.reduce((sum, c) => sum + c.population, 0);
 
@@ -81,6 +86,11 @@ export const createInitialState = (
       heatResistance: 0,
       drugResistance: 0,
       symptoms: [],
+      cureSlowdown: 0,
+      visibilityReduction: 0,
+      borderBypass: 0,
+      airportBypass: 0,
+      seaportBypass: 0,
     },
     countries,
     dnaPoints: 0,
@@ -163,16 +173,32 @@ const canSpreadTo = (
     if (from.isOpen || to.isOpen) {
       return true;
     }
+    // Border bypass ability
+    if (plague.borderBypass > 0 && Math.random() < plague.borderBypass) {
+      return true;
+    }
   }
 
   // Check air travel - requires both airports open
-  if (from.airports && from.airportOpen && to.airports && to.airportOpen) {
-    return true; // Air travel always possible when airports open
+  if (from.airports && to.airports) {
+    if (from.airportOpen && to.airportOpen) {
+      return true; // Air travel always possible when airports open
+    }
+    // Airport bypass ability
+    if (plague.airportBypass > 0 && Math.random() < plague.airportBypass) {
+      return true;
+    }
   }
 
   // Check sea travel - requires both seaports open
-  if (from.seaports && from.seaportOpen && to.seaports && to.seaportOpen) {
-    return true; // Sea travel always possible when seaports open
+  if (from.seaports && to.seaports) {
+    if (from.seaportOpen && to.seaportOpen) {
+      return true; // Sea travel always possible when seaports open
+    }
+    // Seaport bypass ability
+    if (plague.seaportBypass > 0 && Math.random() < plague.seaportBypass) {
+      return true;
+    }
   }
 
   return false;
@@ -302,6 +328,9 @@ const calculateVisibility = (
   // Deaths are very noticeable
   const deadRatio = totalDead / totalPop;
   visibility += deadRatio * 200;
+
+  // Apply visibility reduction from special abilities
+  visibility -= plague.visibilityReduction;
 
   return Math.min(100, Math.max(0, visibility));
 };
@@ -472,10 +501,14 @@ export const gameTick = (state: GameState): GameState => {
   const globalDeathRatio = newTotalDead / state.totalPopulation;
   const deathSlowdown = Math.max(0.1, 1 - globalDeathRatio * 3);
 
+  // Apply cure slowdown from special abilities (genetic hardening etc)
+  const abilitySlowdown = 1 - plague.cureSlowdown;
+
   const cureSpeed =
     totalCureContribution *
     (1 - plague.drugResistance * 0.15) *
     deathSlowdown *
+    abilitySlowdown *
     settings.cureSpeedMultiplier;
   cureProgress = Math.min(100, cureProgress + cureSpeed * 0.08);
 
@@ -629,6 +662,134 @@ export const evolveAbility = (
     ...state,
     dnaPoints: state.dnaPoints - ability.cost,
     plague,
+  };
+};
+
+// Evolve a special ability
+export const evolveSpecialAbility = (
+  state: GameState,
+  abilityId: string
+): GameState => {
+  const ability = specialAbilities.find((a) => a.id === abilityId);
+  if (!ability) return state;
+
+  // Check if can purchase
+  if (ability.timesPurchased >= ability.maxPurchases) return state;
+  if (state.dnaPoints < ability.cost) return state;
+
+  // Mark as purchased
+  ability.timesPurchased++;
+  if (!ability.repeatable || ability.timesPurchased >= ability.maxPurchases) {
+    ability.unlocked = true;
+  }
+
+  // Increase cost for repeatable abilities
+  if (ability.repeatable) {
+    ability.cost = Math.floor(ability.cost * 1.5);
+  }
+
+  // Apply effect to plague
+  const plague = { ...state.plague };
+  let newCureProgress = state.cureProgress;
+
+  switch (ability.effect.type) {
+    case "cure_slow":
+      plague.cureSlowdown = Math.min(
+        0.9,
+        plague.cureSlowdown + ability.effect.value
+      );
+      break;
+    case "visibility_reduce":
+      plague.visibilityReduction += ability.effect.value;
+      break;
+    case "infectivity":
+      plague.infectivity = Math.min(
+        100,
+        plague.infectivity + ability.effect.value
+      );
+      break;
+    case "severity":
+      plague.severity = Math.min(100, plague.severity + ability.effect.value);
+      break;
+    case "lethality":
+      plague.lethality = Math.min(100, plague.lethality + ability.effect.value);
+      break;
+    case "cure_reset":
+      newCureProgress = Math.max(0, state.cureProgress - ability.effect.value);
+      break;
+    case "all_resistance":
+      plague.coldResistance = Math.min(
+        5,
+        plague.coldResistance + ability.effect.value
+      );
+      plague.heatResistance = Math.min(
+        5,
+        plague.heatResistance + ability.effect.value
+      );
+      plague.drugResistance = Math.min(
+        5,
+        plague.drugResistance + ability.effect.value
+      );
+      break;
+    case "drug_resistance":
+      plague.drugResistance = Math.min(
+        5,
+        plague.drugResistance + ability.effect.value
+      );
+      break;
+    case "airborne":
+      plague.airborne = Math.min(10, plague.airborne + ability.effect.value);
+      break;
+    case "waterborne":
+      plague.waterborne = Math.min(
+        10,
+        plague.waterborne + ability.effect.value
+      );
+      break;
+    case "insectborne":
+      plague.insectborne = Math.min(
+        10,
+        plague.insectborne + ability.effect.value
+      );
+      break;
+    case "border_bypass":
+      plague.borderBypass = Math.min(
+        0.5,
+        plague.borderBypass + ability.effect.value
+      );
+      break;
+    case "airport_bypass":
+      plague.airportBypass = Math.min(
+        0.5,
+        plague.airportBypass + ability.effect.value
+      );
+      break;
+    case "seaport_bypass":
+      plague.seaportBypass = Math.min(
+        0.5,
+        plague.seaportBypass + ability.effect.value
+      );
+      break;
+    case "organ_failure":
+      plague.lethality = Math.min(100, plague.lethality + ability.effect.value);
+      plague.severity = Math.min(100, plague.severity + 5);
+      break;
+    case "cytokine_storm":
+      plague.lethality = Math.min(100, plague.lethality + ability.effect.value);
+      plague.severity = Math.min(100, plague.severity + 10);
+      break;
+    case "max_lethality":
+      plague.lethality = 100;
+      break;
+  }
+
+  return {
+    ...state,
+    dnaPoints:
+      state.dnaPoints -
+      (ability.repeatable ? Math.floor(ability.cost / 1.5) : ability.cost),
+    plague,
+    cureProgress: newCureProgress,
   };
 };
 

@@ -1,38 +1,43 @@
 import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { Symptom, Transmission, Ability } from '../types.js';
+import { Symptom, Transmission, Ability, SpecialAbility } from '../types.js';
 
 interface DiseasePanelProps {
     symptoms: Symptom[];
     transmissions: Transmission[];
     abilities: Ability[];
+    specialAbilities: SpecialAbility[];
     dnaPoints: number;
     onEvolveSymptom: (id: string) => void;
     onEvolveTransmission: (id: string) => void;
     onEvolveAbility: (id: string) => void;
+    onEvolveSpecial: (id: string) => void;
     isActive: boolean;
 }
 
-type SubTab = 'symptoms' | 'transmission' | 'abilities';
+type SubTab = 'symptoms' | 'transmission' | 'abilities' | 'special';
 
 export const DiseasePanel: React.FC<DiseasePanelProps> = ({
     symptoms,
     transmissions,
     abilities,
+    specialAbilities,
     dnaPoints,
     onEvolveSymptom,
     onEvolveTransmission,
     onEvolveAbility,
+    onEvolveSpecial,
     isActive,
 }) => {
     const [subTab, setSubTab] = useState<SubTab>('symptoms');
     const [selectedIndex, setSelectedIndex] = useState(0);
 
-    const getCurrentItems = () => {
+    const getCurrentItems = (): (Symptom | Transmission | Ability | SpecialAbility)[] => {
         switch (subTab) {
             case 'symptoms': return symptoms;
             case 'transmission': return transmissions;
             case 'abilities': return abilities;
+            case 'special': return specialAbilities;
         }
     };
 
@@ -44,6 +49,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
         if (input === '1') setSubTab('symptoms');
         if (input === '2') setSubTab('transmission');
         if (input === '3') setSubTab('abilities');
+        if (input === '4') setSubTab('special');
 
         if (key.upArrow) {
             setSelectedIndex(prev => Math.max(0, prev - 1));
@@ -57,6 +63,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
                 if (subTab === 'symptoms') onEvolveSymptom(item.id);
                 if (subTab === 'transmission') onEvolveTransmission(item.id);
                 if (subTab === 'abilities') onEvolveAbility(item.id);
+                if (subTab === 'special') onEvolveSpecial(item.id);
             }
         }
     }, { isActive });
@@ -66,7 +73,15 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
         setSelectedIndex(0);
     }, [subTab]);
 
-    const canUnlock = (item: Symptom | Transmission | Ability): boolean => {
+    const canUnlock = (item: Symptom | Transmission | Ability | SpecialAbility): boolean => {
+        // Special abilities have different logic
+        if ('category' in item) {
+            const special = item as SpecialAbility;
+            if (special.timesPurchased >= special.maxPurchases) return false;
+            if (dnaPoints < special.cost) return false;
+            return true;
+        }
+
         if (item.unlocked) return false;
         if (dnaPoints < item.cost) return false;
 
@@ -97,15 +112,19 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
 
             <Box marginTop={1}>
                 <Text color={subTab === 'symptoms' ? 'yellow' : 'white'} bold={subTab === 'symptoms'}>
-                    [1] Symptoms
+                    [1]Sym
                 </Text>
-                <Text> | </Text>
+                <Text> </Text>
                 <Text color={subTab === 'transmission' ? 'yellow' : 'white'} bold={subTab === 'transmission'}>
-                    [2] Transmission
+                    [2]Trans
                 </Text>
-                <Text> | </Text>
+                <Text> </Text>
                 <Text color={subTab === 'abilities' ? 'yellow' : 'white'} bold={subTab === 'abilities'}>
-                    [3] Abilities
+                    [3]Abil
+                </Text>
+                <Text> </Text>
+                <Text color={subTab === 'special' ? 'yellow' : 'white'} bold={subTab === 'special'}>
+                    [4]Special
                 </Text>
             </Box>
 
@@ -113,24 +132,40 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
                 {items.map((item, index) => {
                     const isSelected = index === selectedIndex && isActive;
                     const canBuy = canUnlock(item);
+                    const isSpecial = 'category' in item;
+                    const special = isSpecial ? item as SpecialAbility : null;
 
                     let statusColor = 'gray';
                     let statusText = `[${item.cost} DNA]`;
 
-                    if (item.unlocked) {
-                        statusColor = 'green';
-                        statusText = '[OK] Evolved';
-                    } else if (canBuy) {
-                        statusColor = 'cyan';
-                    } else if (dnaPoints < item.cost) {
-                        statusColor = 'red';
+                    if (isSpecial && special) {
+                        if (special.timesPurchased >= special.maxPurchases) {
+                            statusColor = 'green';
+                            statusText = special.repeatable ? `[MAX ${special.timesPurchased}x]` : '[OK]';
+                        } else if (canBuy) {
+                            statusColor = 'cyan';
+                            if (special.repeatable) {
+                                statusText = `[${item.cost} DNA] (${special.timesPurchased}/${special.maxPurchases})`;
+                            }
+                        } else if (dnaPoints < item.cost) {
+                            statusColor = 'red';
+                        }
+                    } else {
+                        if (item.unlocked) {
+                            statusColor = 'green';
+                            statusText = '[OK] Evolved';
+                        } else if (canBuy) {
+                            statusColor = 'cyan';
+                        } else if (dnaPoints < item.cost) {
+                            statusColor = 'red';
+                        }
                     }
 
                     return (
                         <Box key={item.id} flexDirection="column">
                             <Text inverse={isSelected}>
                                 <Text color={statusColor}>{isSelected ? '> ' : '  '}</Text>
-                                <Text bold={!item.unlocked}>{item.name}</Text>
+                                <Text bold={isSpecial ? (special!.timesPurchased < special!.maxPurchases) : !item.unlocked}>{item.name}</Text>
                                 <Text color={statusColor}> {statusText}</Text>
                             </Text>
                             {isSelected && (
@@ -148,6 +183,9 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
                                     {'lethalityBonus' in item && (
                                         <Text color="red"> +{(item as Symptom).lethalityBonus} LTH</Text>
                                     )}
+                                    {'category' in item && (
+                                        <Text color="magenta"> [{(item as SpecialAbility).category.toUpperCase()}]</Text>
+                                    )}
                                 </Text>
                             )}
                         </Box>
@@ -156,7 +194,7 @@ export const DiseasePanel: React.FC<DiseasePanelProps> = ({
             </Box>
 
             <Box marginTop={1}>
-                <Text dimColor>Up/Down: Navigate | Enter: Evolve | 1-3: Switch tabs</Text>
+                <Text dimColor>Up/Down: Navigate | Enter: Evolve | 1-4: Switch tabs</Text>
             </Box>
         </Box>
     );

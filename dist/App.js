@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, useApp, useInput } from 'ink';
-import { createInitialState, gameTick, startGame, evolveSymptom, evolveTransmission, evolveAbility, getSymptoms, getTransmissions, getAbilities, } from './engine/gameEngine.js';
+import { createInitialState, gameTick, startGame, evolveSymptom, evolveTransmission, evolveAbility, evolveSpecialAbility, getSymptoms, getTransmissions, getAbilities, getSpecialAbilities, } from './engine/gameEngine.js';
 import { Header } from './components/Header.js';
 import { WorldMap } from './components/WorldMap.js';
 import { DiseasePanel } from './components/DiseasePanel.js';
@@ -46,6 +46,9 @@ export const App = () => {
     }, []);
     const handleEvolveAbility = useCallback((id) => {
         setGameState(prev => evolveAbility(prev, id));
+    }, []);
+    const handleEvolveSpecial = useCallback((id) => {
+        setGameState(prev => evolveSpecialAbility(prev, id));
     }, []);
     // Global input handling
     useInput((input, key) => {
@@ -93,7 +96,7 @@ export const App = () => {
                 React.createElement(WorldMap, { countries: gameState.countries, selectedCountry: selectedCountry, onSelectCountry: setSelectedCountry }),
                 showTransits && (React.createElement(TransitPanel, { transits: gameState.recentTransits, countries: gameState.countries, currentDay: gameState.day }))),
             React.createElement(Box, { flexDirection: "column", width: "40%" },
-                React.createElement(DiseasePanel, { symptoms: getSymptoms(), transmissions: getTransmissions(), abilities: getAbilities(), dnaPoints: gameState.dnaPoints, onEvolveSymptom: handleEvolveSymptom, onEvolveTransmission: handleEvolveTransmission, onEvolveAbility: handleEvolveAbility, isActive: activePanel === 'disease' }),
+                React.createElement(DiseasePanel, { symptoms: getSymptoms(), transmissions: getTransmissions(), abilities: getAbilities(), specialAbilities: getSpecialAbilities(), dnaPoints: gameState.dnaPoints, onEvolveSymptom: handleEvolveSymptom, onEvolveTransmission: handleEvolveTransmission, onEvolveAbility: handleEvolveAbility, onEvolveSpecial: handleEvolveSpecial, isActive: activePanel === 'disease' }),
                 React.createElement(NewsReel, { newsItems: gameState.newsItems, maxItems: 6 }))),
         React.createElement(HelpPanel, null)));
 };
